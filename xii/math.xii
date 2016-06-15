@@ -1,3 +1,5 @@
+#! /usr/bin/env XiiLang
+
 number a
 number b
 number x
@@ -6,7 +8,7 @@ number t
 number gcd
 number lcm
  
-out "Enter two integers"
+out "Enter two integers:"
 in x
 in y
  

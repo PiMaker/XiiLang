@@ -6,7 +6,7 @@ number b
 number times
 
 # Prompt user
-out "Bitte geben Sie zwei zu addierende Zahlen ein sowie eine Anzahl:"
+out "Please enter two numbers and a count:"
 
 # Read input
 in a
@@ -24,4 +24,4 @@ while times != 0
 end
 
 # Fin
-out "Ende!"
+out "The End!"
