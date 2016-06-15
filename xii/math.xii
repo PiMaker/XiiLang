@@ -1,0 +1,26 @@
+number a
+number b
+number x
+number y
+number t
+number gcd
+number lcm
+ 
+out "Enter two integers"
+in x
+in y
+ 
+a = x
+b = y
+ 
+while b != 0
+    t = b
+    b = a % b
+    a = t
+end
+ 
+gcd = a
+lcm = ( x * y ) / gcd
+ 
+out "Greatest common divisor: " gcd
+out "Least common multiple: " lcm

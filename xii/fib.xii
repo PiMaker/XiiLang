@@ -1,0 +1,25 @@
+#! /usr/bin/env XiiLang
+
+number current
+number last
+
+current = 1
+last = 0
+
+number n
+out "How many fibonacci numbers do you want to calculate?"
+in n
+
+while n > 0
+
+    number new
+    new = current + last
+
+    out new
+
+    last = current
+    current = new
+
+    n = n - 1
+
+end

@@ -1,0 +1,27 @@
+#! /home/pi/go/bin/XiiLang
+
+# Create variables
+number a
+number b
+number times
+
+# Prompt user
+out "Bitte geben Sie zwei zu addierende Zahlen ein sowie eine Anzahl:"
+
+# Read input
+in a
+in b
+in times
+
+# Calculate output
+number c
+c = a + b
+
+# Loop "times"
+while times != 0
+  out c
+  times = times - 1
+end
+
+# Fin
+out "Ende!"
