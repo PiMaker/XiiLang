@@ -13,7 +13,11 @@ You can read about the following topics in the docs:
 
 # ToDo
 
-* Switch to https://github.com/Knetic/govaluate as expression evaluator
+* Add functions
+* Add scopes
+* Add namespaces
+* Add real types
+* Add structures
 
 # License
 

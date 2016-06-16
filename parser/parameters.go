@@ -40,8 +40,8 @@ func (p VariableParameter) String() string {
 }
 
 func (p VariableParameter) GetText(state XiiState) string {
-    lit, ok1 := state.VariableLiteralTable[p.Text]
-    num, ok2 := state.VariableNumberTable[p.Text]
+    lit, ok1 := state.VariableTable[p.Text].(string)
+    num, ok2 := state.VariableTable[p.Text].(float64)
 
     if ok1 {
         return lit

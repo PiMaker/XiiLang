@@ -34,7 +34,7 @@ func (node NumberDeclarationNode) Execute(state *XiiState) error {
         return errors.New("number: No parameter name given (or too many)")
     }
 
-    state.VariableNumberTable[node.Parameter[0].GetRaw()] = 0
+    state.VariableTable[node.Parameter[0].GetRaw()] = float64(0)
 
     return nil
 }
@@ -49,7 +49,7 @@ func (node LiteralDeclarationNode) Execute(state *XiiState) error {
         return errors.New("string: No parameter name given (or too many)")
     }
 
-    state.VariableLiteralTable[node.Parameter[0].GetRaw()] = ""
+    state.VariableTable[node.Parameter[0].GetRaw()] = ""
 
     return nil
 }
@@ -84,19 +84,19 @@ func (node InputNode) Execute(state *XiiState) error {
     }
 
     varname := node.Parameter[0].GetRaw()
-    _, ok1 := state.VariableLiteralTable[varname]
-    _, ok2 := state.VariableNumberTable[varname]
+    _, ok1 := state.VariableTable[varname].(string)
+    _, ok2 := state.VariableTable[varname].(float64)
 
     if ok1 || ok2 {
         var text string
         fmt.Scanln(&text)
         if ok1 {
-            state.VariableLiteralTable[varname] = text
+            state.VariableTable[varname] = text
         } else if ok2 {
             for {
                 num, err := strconv.ParseFloat(text, 64)
                 if err == nil {
-                    state.VariableNumberTable[varname] = num
+                    state.VariableTable[varname] = num
                     break
                 } else {
                     fmt.Println("Please retry: " + err.Error())
@@ -115,6 +115,7 @@ func (node InputNode) Execute(state *XiiState) error {
 type LoopNode struct {
     Node
     nextAfterEndNode INode
+    expression *Expression
 }
 
 func (node *LoopNode) Init(nodes []INode) error {
@@ -145,13 +146,28 @@ func (node *LoopNode) Init(nodes []INode) error {
 
         _, ok = nextEnd.(*BlockEndNode)
     }
+
     node.nextAfterEndNode = nextEnd.Next()
+
+    exp, err := NewExpression(node.Parameter)
+
+    if err != nil {
+        return err
+    }
+
+    node.expression = exp
 
     return nil
 }
 
 func (node LoopNode) Execute(state *XiiState) error {
-    if Evaluate(*state, node.Parameter) == 0 {
+    res, err := Evaluate(state, node.expression)
+
+    if err != nil {
+        return err
+    }
+
+    if res == 0 {
         state.NextNode = node.nextAfterEndNode
     }
 
@@ -162,6 +178,7 @@ func (node LoopNode) Execute(state *XiiState) error {
 type ConditionNode struct {
     Node
     nextEndNode INode
+    expression *Expression
 }
 
 func (node *ConditionNode) Init(nodes []INode) error {
@@ -192,13 +209,28 @@ func (node *ConditionNode) Init(nodes []INode) error {
 
         _, ok = nextEnd.(*BlockEndNode)
     }
+    
     node.nextEndNode = nextEnd.Next()
+
+    exp, err := NewExpression(node.Parameter)
+
+    if err != nil {
+        return err
+    }
+
+    node.expression = exp
 
     return nil
 }
 
 func (node ConditionNode) Execute(state *XiiState) error {
-    if Evaluate(*state, node.Parameter) == 0 {
+    res, err := Evaluate(state, node.expression)
+
+    if err != nil {
+        return err
+    }
+
+    if res == 0 {
         state.NextNode = node.nextEndNode
     }
 
@@ -248,22 +280,31 @@ func (node BlockEndNode) Execute(state *XiiState) error {
 
 type SetNode struct {
     Node
+    expression *Expression
 }
 
-func (node SetNode) Init(nodes []INode) error {
+func (node *SetNode) Init(nodes []INode) error {
     if len(node.Parameter) < 2 || node.Parameter[0].GetRaw() != "=" {
         return errors.New("set: Invalid set syntax")
     }
+
+    exp, err := NewExpression(node.Parameter[1:])
+
+    if err != nil {
+        return err
+    }
+
+    node.expression = exp
 
     return nil
 }
 
 func (node SetNode) Execute(state *XiiState) error {
     varname := node.Keyword
-    _, ok := state.VariableNumberTable[varname]
+    _, ok := state.VariableTable[varname].(float64)
 
     if !ok {
-        _, ok = state.VariableLiteralTable[varname]
+        _, ok = state.VariableTable[varname].(string)
         if !ok {
             return errors.New("set: Can't set not existing variable")
         }
@@ -276,12 +317,18 @@ func (node SetNode) Execute(state *XiiState) error {
             setval += v.GetText(*state)
         }
 
-        state.VariableLiteralTable[varname] = setval
+        state.VariableTable[varname] = setval
 
         return nil
     }
+    
+    res, err := Evaluate(state, node.expression)
 
-    state.VariableNumberTable[varname] = Evaluate(*state, node.Parameter[1:])
+    if err != nil {
+        return err
+    }
+
+    state.VariableTable[varname] = res
 
     return nil
 }

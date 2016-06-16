@@ -21,7 +21,7 @@ func ParseTokens(tokens [][]Token) ([]INode, error) {
         keyword := line[0]
         var parameter []IParameter
 
-        trace := fmt.Sprintf("File: %s / Line: %d", line[0].File, line[0].Line)
+        trace := fmt.Sprintf("File: %s / Line: %d / %s", line[0].File, line[0].Line, keyword.Text)
 
         var lastP IParameter
         for _, p := range line[1:] {

@@ -64,7 +64,7 @@ func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, dump, t
         tmpNext := state.NextNode.GetID()
 
         if trace {
-            fmt.Printf("#Trace :: ID: %d / %s / %s\n", tmpNext, state.NextNode.GetTrace(), reflect.TypeOf(state.NextNode))
+            fmt.Printf("Trace :: ID: %d / %s / %s\n", tmpNext, state.NextNode.GetTrace(), reflect.TypeOf(state.NextNode))
         }
 
         var beforeTime time.Time
@@ -95,10 +95,8 @@ func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, dump, t
 
         if dump {
             fmt.Println()
-            fmt.Println("---- Literal-Table:")
-            dumpStringMap(state.VariableLiteralTable)
             fmt.Println("---- Variable-Table:")
-            dumpFloatMap(state.VariableNumberTable)
+            dumpMap(state.VariableTable)
         }
 
         if debug {
@@ -110,16 +108,9 @@ func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, dump, t
     }
 }
 
-func dumpStringMap(m map[string]string) {
+func dumpMap(m map[string]interface{}) {
     for k, v := range m {
         fmt.Printf("%s:\t%s\n", k, v)
-    }
-    fmt.Println()
-}
-
-func dumpFloatMap(m map[string]float64) {
-    for k, v := range m {
-        fmt.Printf("%s:\t%f\n", k, v)
     }
     fmt.Println()
 }
