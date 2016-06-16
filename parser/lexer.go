@@ -5,18 +5,23 @@ import (
     "strings"
     "errors"
     "log"
+    "fmt"
 )
 
 func ParseTokens(tokens [][]Token) ([]INode, error) {
     log.Println("Lexing tokens...")
 
     nodes := make([]INode, len(tokens))
+
+    var tempVariableTable []string
     
     for ii, line := range tokens {
         var newNode INode
 
         keyword := line[0]
         var parameter []IParameter
+
+        trace := fmt.Sprintf("File: %s / Line: %d", line[0].File, line[0].Line)
 
         var lastP IParameter
         for _, p := range line[1:] {
@@ -27,15 +32,13 @@ func ParseTokens(tokens [][]Token) ([]INode, error) {
                 continue
             }
 
-            //_, isVar := lastP.(VariableParameter)
             _, isLit := lastP.(LiteralParameter)
-            //_, isOp := lastP.(OperatorParameter)
-
             if (isLit && strings.Index(parameter[len(parameter)-1].GetRaw(), "\"") < 1 && parameter[len(parameter)-1].GetRaw() != "\"") || strings.Index(p.Text, "\"") == 0 {
                 lastP = LiteralParameter{Parameter: Parameter{Text: p.Text}}
                 parameter = append(parameter, lastP)
                 continue
             }
+
             if isOperator(p.Text) {
                 lastP = OperatorParameter{Parameter: Parameter{Text: p.Text}}
                 parameter = append(parameter, lastP)
@@ -46,21 +49,33 @@ func ParseTokens(tokens [][]Token) ([]INode, error) {
         }
 
         if keyword.Text == "end" {
-            newNode = &BlockEndNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &BlockEndNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
         } else if keyword.Text == "while" {
-            newNode = &LoopNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &LoopNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
         } else if keyword.Text == "if" {
-            newNode = &ConditionNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &ConditionNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
         } else if keyword.Text == "number" {
-            newNode = &NumberDeclarationNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &NumberDeclarationNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
+            tempVariableTable = append(tempVariableTable, parameter[0].GetRaw())
         } else if keyword.Text == "string" {
-            newNode = &LiteralDeclarationNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &LiteralDeclarationNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
+            tempVariableTable = append(tempVariableTable, parameter[0].GetRaw())
         } else if keyword.Text == "out" {
-            newNode = &OutputNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &OutputNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
         } else if keyword.Text == "in" {
-            newNode = &InputNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            newNode = &InputNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
         } else {
-            newNode = &SetNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii}}
+            isVar := false
+            for _, v := range tempVariableTable {
+                if v == keyword.Text {
+                    isVar = true
+                    break
+                }
+            }
+
+            if isVar {
+                newNode = &SetNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace}}
+            }
         }
 
         if ii > 0 {
@@ -68,7 +83,7 @@ func ParseTokens(tokens [][]Token) ([]INode, error) {
         }
 
         if newNode == nil {
-            return nil, errors.New("Node type " + keyword.Text + " unknown, maybe a keyword is wrong?")
+            return nil, errors.New(trace + ": Node type " + keyword.Text + " unknown, maybe a keyword is wrong?")
         }
 
         nodes[ii] = newNode
@@ -82,7 +97,17 @@ func ParseTokens(tokens [][]Token) ([]INode, error) {
         }
     }
 
-    log.Println("Tokens processed, program ready for execution.")
+    log.Println("Initializing nodes...")
+
+    for _, node := range nodes {
+        err := node.Init(nodes)
+        if err != nil {
+            log.Println(node.GetTrace() + ": " + err.Error())
+            return nil, errors.New("Error while initializing")
+        }
+    }
+
+    log.Printf("Tokens processed, %d nodes created. Program ready for execution.\n", len(nodes))
 
     return nodes, nil
 }

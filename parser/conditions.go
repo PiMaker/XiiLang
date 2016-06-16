@@ -3,8 +3,9 @@ package parser
 import (
     "github.com/soniah/evaler"
     "fmt"
-    "log"
 )
+
+var VerboseEval bool
 
 func Evaluate(state XiiState, condition []IParameter) float64 {
     var toEval string
@@ -14,7 +15,9 @@ func Evaluate(state XiiState, condition []IParameter) float64 {
         rawEval += v.GetRaw()
     }
 
-    log.Printf("Executing eval: %s (%s)\n", rawEval, toEval)
+    if VerboseEval {
+        fmt.Printf("Executing eval: %s (%s)\n", rawEval, toEval)
+    }
 
     result, err := evaler.Eval(toEval)
 
@@ -25,5 +28,10 @@ func Evaluate(state XiiState, condition []IParameter) float64 {
     }
 
     val, _ := result.Float64()
+
+    if VerboseEval {
+        fmt.Printf("Eval-Result: %f\n", val)
+    }
+
     return val
 }

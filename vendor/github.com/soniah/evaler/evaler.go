@@ -24,7 +24,7 @@ var unary_minus_rx = regexp.MustCompile(`((?:^|[-+*/<>(])\s*)-`)
 var fp_rx = regexp.MustCompile(`(\d+(?:\.\d+)?)`) // simple fp number
 
 // Operator '@' means unary minus
-var operators = "-+**/<>@!=%"
+var operators = "-+**/<=>=@!==%"
 
 // prec returns the operator's precedence
 func prec(op string) (result int) {
@@ -135,6 +135,7 @@ func evaluatePostfix(postfix []string) (*big.Rat, error) {
 			}
 
 			dummy := new(big.Rat)
+
 			switch token {
 			case "**":
 				float1 := BigratToFloat(op1.(*big.Rat))
@@ -240,7 +241,7 @@ func Eval(expr string) (result *big.Rat, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			result = nil
-			err = fmt.Errorf("Invalid Expression: %s", expr)
+			err = fmt.Errorf("%s", expr)
 		}
 	}()
 

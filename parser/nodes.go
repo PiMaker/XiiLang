@@ -11,14 +11,17 @@ type Node struct {
     ID int
     Parameter []IParameter
     NextNode, PreviousNode INode
+    Trace string
 }
 
 type INode interface {
     Execute(state *XiiState) error
     Previous() INode
     Next() INode
+    Init(nodes []INode) error
     GetKeyword() string
     GetID() int
+    GetTrace() string
 }
 
 
@@ -111,17 +114,45 @@ func (node InputNode) Execute(state *XiiState) error {
 
 type LoopNode struct {
     Node
+    nextAfterEndNode INode
+}
+
+func (node *LoopNode) Init(nodes []INode) error {
+    nextEnd := node.Next()
+    counter := 1
+    _, ok := nextEnd.(*BlockEndNode)
+    for {
+        if ok {
+            counter--
+
+            if counter == 0 {
+                break
+            }
+        }
+
+        _, ok2 := nextEnd.(*LoopNode)
+        _, ok3 := nextEnd.(*ConditionNode)
+
+        if ok2 || ok3 {
+            counter++
+        }
+        
+        nextEnd = nextEnd.Next()
+
+        if nextEnd == nil {
+            return errors.New("A loop node requires a matching end node")
+        }
+
+        _, ok = nextEnd.(*BlockEndNode)
+    }
+    node.nextAfterEndNode = nextEnd.Next()
+
+    return nil
 }
 
 func (node LoopNode) Execute(state *XiiState) error {
     if Evaluate(*state, node.Parameter) == 0 {
-        nextEnd := node.Next()
-        _, ok := nextEnd.(*BlockEndNode)
-        for !ok {
-            nextEnd = nextEnd.Next()
-            _, ok = nextEnd.(*BlockEndNode)
-        }
-        state.NextNode = nextEnd.Next()
+        state.NextNode = node.nextAfterEndNode
     }
 
     return nil
@@ -130,17 +161,45 @@ func (node LoopNode) Execute(state *XiiState) error {
 
 type ConditionNode struct {
     Node
+    nextEndNode INode
+}
+
+func (node *ConditionNode) Init(nodes []INode) error {
+    nextEnd := node.Next()
+    counter := 1
+    _, ok := nextEnd.(*BlockEndNode)
+    for {
+        if ok {
+            counter--
+
+            if counter == 0 {
+                break
+            }
+        }
+
+        _, ok2 := nextEnd.(*LoopNode)
+        _, ok3 := nextEnd.(*ConditionNode)
+
+        if ok2 || ok3 {
+            counter++
+        }
+        
+        nextEnd = nextEnd.Next()
+
+        if nextEnd == nil {
+            return errors.New("A condition node requires a matching end node")
+        }
+
+        _, ok = nextEnd.(*BlockEndNode)
+    }
+    node.nextEndNode = nextEnd.Next()
+
+    return nil
 }
 
 func (node ConditionNode) Execute(state *XiiState) error {
     if Evaluate(*state, node.Parameter) == 0 {
-        nextEnd := node.Next()
-        _, ok := nextEnd.(*BlockEndNode)
-        for !ok {
-            nextEnd = nextEnd.Next()
-            _, ok = nextEnd.(*BlockEndNode)
-        }
-        state.NextNode = nextEnd.Next()
+        state.NextNode = node.nextEndNode
     }
 
     return nil
@@ -149,20 +208,41 @@ func (node ConditionNode) Execute(state *XiiState) error {
 
 type BlockEndNode struct {
     Node
+    companionNode INode
 }
 
-func (node BlockEndNode) Execute(state *XiiState) error {
+func (node *BlockEndNode) Init(nodes []INode) error {
     companion := node.Previous()
+    counter := 1
     for {
         switch companion.(type) {
         case (*ConditionNode):
-            return nil
+            counter--
+            if counter == 0 {
+                return nil
+            }
         case (*LoopNode):
-            state.NextNode = companion
-            return nil
+            counter--
+            if counter == 0 {
+                node.companionNode = companion
+                return nil
+            }
+        case (*BlockEndNode):
+            counter++
         }
         companion = companion.Previous()
+        if companion == nil {
+            return errors.New("end Node without condition/loop")
+        }
     }
+}
+
+func (node BlockEndNode) Execute(state *XiiState) error {
+    if node.companionNode != nil {
+        state.NextNode = node.companionNode
+    }
+
+    return nil
 }
 
 
@@ -170,11 +250,15 @@ type SetNode struct {
     Node
 }
 
-func (node SetNode) Execute(state *XiiState) error {
+func (node SetNode) Init(nodes []INode) error {
     if len(node.Parameter) < 2 || node.Parameter[0].GetRaw() != "=" {
         return errors.New("set: Invalid set syntax")
     }
 
+    return nil
+}
+
+func (node SetNode) Execute(state *XiiState) error {
     varname := node.Keyword
     _, ok := state.VariableNumberTable[varname]
 
@@ -204,7 +288,7 @@ func (node SetNode) Execute(state *XiiState) error {
 
 
 func (node Node) Execute(state *XiiState) error {
-    return errors.New("Error: NoOp Node executed")
+    return errors.New("Error: No-Op Node executed")
 }
 
 func (node Node) Previous() INode {
@@ -223,6 +307,14 @@ func (node Node) GetID() int {
     return node.ID
 }
 
+func (node Node) Init(nodes []INode) error {
+    return nil
+}
+
 func (node Node) String() string {
     return fmt.Sprintf("{{%d/%s : %s}}", node.ID, node.Keyword, node.Parameter)
+}
+
+func (node Node) GetTrace() string {
+    return node.Trace
 }

@@ -1,0 +1,25 @@
+#! /usr/bin/env XiiLang
+
+number x
+x = 1000
+
+number z
+
+out "Starting..."
+
+while x > 0
+  number y
+  y = 1000
+  while y > 0
+    y = y - 1
+    z = z + 1
+  end
+  if ( x % 100 ) == 0
+    if x != 0
+      out x
+    end
+  end
+  x = x - 1
+end
+
+out "Result: " z

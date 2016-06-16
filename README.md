@@ -11,6 +11,10 @@ You can read about the following topics in the docs:
 * [Statements](https://github.com/PiMaker/XiiLang/blob/master/doc/statements.md)
 * [Conditions](https://github.com/PiMaker/XiiLang/blob/master/doc/conditions.md)
 
+# ToDo
+
+* Switch to https://github.com/Knetic/govaluate as expression evaluator
+
 # License
 
 The MIT License (MIT)

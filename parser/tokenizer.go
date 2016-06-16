@@ -10,7 +10,14 @@ import (
 
 type Token struct {
     Text string
+    File string
+    Line int
 }
+
+var (
+    currentTokenLine int
+    currentPath string
+)
 
 func TokenizeFile(path string) ([][]Token, error) {
     
@@ -27,7 +34,11 @@ func TokenizeFile(path string) ([][]Token, error) {
 
     log.Println("Tokenizing...")
 
+    currentTokenLine = 0
+    currentPath = path
+
     for scanner.Scan() {
+        currentTokenLine++
         tokenize(scanner.Text(), &tokens)
     }
 
@@ -58,7 +69,7 @@ func stringSliceToTokenSlice(vs []string) []Token {
     var vsm []Token
     for _, v := range vs {
         if strings.Trim(v, " ") != "" {
-            vsm = append(vsm, Token{Text: v})
+            vsm = append(vsm, Token{Text: v, File: currentPath, Line: currentTokenLine})
         }
     }
     return vsm
