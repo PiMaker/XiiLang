@@ -12,11 +12,11 @@ import (
 )
 
 func main() {
-    fmt.Println("XiiLang(sr) v0.1, (C) Stefan Reiter 2016")
+    fmt.Println("XiiLang(sr) v0.3, (C) Stefan Reiter 2016")
 
     verbose := flag.Bool("v", false, "Be verbose with output")
     debug := flag.Bool("d", false, "Execute a script line by line and wait for enter")
-    dump := flag.Bool("p", false, "Print variable/literal table information after each node")
+    dump := flag.Bool("p", false, "Print variable table after each node")
     trace := flag.Bool("t", false, "Trace mode, prints statement information for every executed node")
     verboseEval := flag.Bool("e", false, "Trace eval calls for conditions")
     stats := flag.Bool("s", false, "Print runtime stats after execution")
@@ -28,6 +28,12 @@ func main() {
 
     if !verboseVal {
         log.SetOutput(ioutil.Discard)
+    }
+
+    parser.VerboseEval = *verboseEval
+
+    if *verboseEval {
+        fmt.Println("Eval trace enabled")
     }
 
     log.Println("Loading file: " + path)
@@ -52,12 +58,9 @@ func main() {
     log.Printf("Compilation took %s\n", time.Since(startTime))
 
     state := &parser.XiiState{}
-    state.VariableNumberTable = make(map[string]float64)
-    state.VariableLiteralTable = make(map[string]string)
+    state.VariableTable = make(map[string]interface{})
     state.Nodes = nodes
     state.NextNode = nodes[0]
-
-    parser.VerboseEval = *verboseEval
 
     interpreter.Interpret(nodes, state, *debug, *dump, *trace, *stats)
 

@@ -1,4 +1,4 @@
-#! /home/pi/go/bin/XiiLang
+#! /usr/bin/env XiiLang
 
 # Create variables
 number a
