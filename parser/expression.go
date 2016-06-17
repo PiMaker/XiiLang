@@ -16,14 +16,11 @@ type Expression struct {
 }
 
 func Evaluate(state *XiiState, expression *Expression) (float64, error) {
-	if VerboseEval {
-		fmt.Printf("Evaluating expression: %s\n", expression.ExprString)
-	}
 
 	result, err := expression.Expr.Evaluate(state.VariableTable)
 
 	if VerboseEval {
-		fmt.Printf(" -> %s\n", result)
+		fmt.Printf("Evaluating expression: %s -> %s\n", expression.ExprString, result)
 	}
 
 	if err != nil {

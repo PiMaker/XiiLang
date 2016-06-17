@@ -13,8 +13,8 @@ You can read about the following topics in the docs:
 
 # ToDo
 
-* Add functions
 * Add scopes
+* Add functions
 * Add namespaces
 * Add real types
 * Add structures
