@@ -1,8 +1,13 @@
 package parser
 
+import (
+    "bufio"
+)
+
 type XiiState struct {
-    VariableTable map[string]interface{}
-    FunctionTable map[string]*Node
     NextNode INode
     Nodes []INode
+    FunctionStack *NodeStack
+    PassingArea map[string]interface{}
+    StdOut *bufio.Writer
 }

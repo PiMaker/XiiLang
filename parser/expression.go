@@ -15,12 +15,12 @@ type Expression struct {
 	ExprString string
 }
 
-func Evaluate(state *XiiState, expression *Expression) (float64, error) {
+func Evaluate(node INode, expression *Expression) (float64, error) {
 
-	result, err := expression.Expr.Evaluate(state.VariableTable)
+	result, err := expression.Expr.Evaluate(node.GetScope())
 
 	if VerboseEval {
-		fmt.Printf("Evaluating expression: %s -> %s\n", expression.ExprString, result)
+		fmt.Printf("Evaluated expression: %s -> %s\n", expression.ExprString, result)
 	}
 
 	if err != nil {

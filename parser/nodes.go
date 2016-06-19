@@ -12,6 +12,7 @@ type Node struct {
     Parameter []IParameter
     NextNode, PreviousNode INode
     Trace string
+    Scope *Scope
 }
 
 type INode interface {
@@ -22,6 +23,7 @@ type INode interface {
     GetKeyword() string
     GetID() int
     GetTrace() string
+    GetScope() *Scope
 }
 
 
@@ -29,13 +31,7 @@ type NumberDeclarationNode struct {
     Node
 }
 
-func (node NumberDeclarationNode) Execute(state *XiiState) error {
-    if len(node.Parameter) != 1 {
-        return errors.New("number: No parameter name given (or too many)")
-    }
-
-    state.VariableTable[node.Parameter[0].GetRaw()] = float64(0)
-
+func (node *NumberDeclarationNode) Execute(state *XiiState) error {
     return nil
 }
 
@@ -44,12 +40,67 @@ type LiteralDeclarationNode struct {
     Node
 }
 
-func (node LiteralDeclarationNode) Execute(state *XiiState) error {
-    if len(node.Parameter) != 1 {
-        return errors.New("string: No parameter name given (or too many)")
+func (node *LiteralDeclarationNode) Execute(state *XiiState) error {
+    return nil
+}
+
+
+type Passer struct {
+    Name string
+    Type string
+}
+
+
+type FunctionDeclarationNode struct {
+    Node
+    Parameters []Passer
+    nextAfterEnd INode
+}
+
+func (node *FunctionDeclarationNode) Init(nodes []INode) error {
+    nextEnd := findNextEndNode(node)
+
+    if nextEnd == nil {
+        return errors.New("A function node requires a matching end node")
     }
 
-    state.VariableTable[node.Parameter[0].GetRaw()] = ""
+    node.nextAfterEnd = nextEnd.Next()
+
+    return nil
+}
+
+func (node *FunctionDeclarationNode) Execute(state *XiiState) error {
+    if state.PassingArea == nil {
+        state.NextNode = node.nextAfterEnd
+    } else {
+        for k, v := range state.PassingArea {
+            node.GetScope().SetVar(k, v)
+        }
+        state.PassingArea = nil
+    }
+    
+    return nil
+}
+
+
+type CallNode struct {
+    Node
+    Passers map[string]IParameter
+}
+
+func (node *CallNode) Execute(state *XiiState) error {
+    fun := node.GetScope().GetFunctionNode(node.Parameter[0].GetRaw())
+    if fun == nil {
+        return errors.New("Tried to call non-existing function")
+    }
+
+    state.PassingArea = make(map[string]interface{}, 0)
+    for k, v := range node.Passers {
+        state.PassingArea[k] = v.GetValue(node.GetScope())
+    }
+
+    state.NextNode = fun
+    state.FunctionStack.Push(node)
 
     return nil
 }
@@ -59,16 +110,16 @@ type OutputNode struct {
     Node
 }
 
-func (node OutputNode) Execute(state *XiiState) error {
+func (node *OutputNode) Execute(state *XiiState) error {
     for i, n := range node.Parameter {
         _, ok := n.(VariableParameter)
         if i != 0 && !ok {
-            fmt.Print(" ")
+            state.StdOut.WriteRune(' ')
         }
-        fmt.Print(n.GetText(*state))
+        state.StdOut.WriteString(n.GetText(node.GetScope()))
     }
 
-    fmt.Println()
+    state.StdOut.WriteRune('\n')
 
     return nil
 }
@@ -78,25 +129,31 @@ type InputNode struct {
     Node
 }
 
-func (node InputNode) Execute(state *XiiState) error {
+func (node *InputNode) Execute(state *XiiState) error {
     if len(node.Parameter) != 1 {
         return errors.New("in: No parameter name given (or too many)")
     }
 
     varname := node.Parameter[0].GetRaw()
-    _, ok1 := state.VariableTable[varname].(string)
-    _, ok2 := state.VariableTable[varname].(float64)
+    variable := node.GetScope().GetVar(varname)
+
+    if variable == nil {
+        return errors.New("Tried to 'in' not existing variable")
+    }
+
+    _, ok1 := variable.(string)
+    _, ok2 := variable.(float64)
 
     if ok1 || ok2 {
         var text string
         fmt.Scanln(&text)
         if ok1 {
-            state.VariableTable[varname] = text
+            node.GetScope().SetVar(varname, text)
         } else if ok2 {
             for {
                 num, err := strconv.ParseFloat(text, 64)
                 if err == nil {
-                    state.VariableTable[varname] = num
+                    node.GetScope().SetVar(varname, num)
                     break
                 } else {
                     fmt.Println("Please retry: " + err.Error())
@@ -119,32 +176,10 @@ type LoopNode struct {
 }
 
 func (node *LoopNode) Init(nodes []INode) error {
-    nextEnd := node.Next()
-    counter := 1
-    _, ok := nextEnd.(*BlockEndNode)
-    for {
-        if ok {
-            counter--
+    nextEnd := findNextEndNode(node)
 
-            if counter == 0 {
-                break
-            }
-        }
-
-        _, ok2 := nextEnd.(*LoopNode)
-        _, ok3 := nextEnd.(*ConditionNode)
-
-        if ok2 || ok3 {
-            counter++
-        }
-        
-        nextEnd = nextEnd.Next()
-
-        if nextEnd == nil {
-            return errors.New("A loop node requires a matching end node")
-        }
-
-        _, ok = nextEnd.(*BlockEndNode)
+    if nextEnd == nil {
+        return errors.New("A loop node requires a matching end node")
     }
 
     node.nextAfterEndNode = nextEnd.Next()
@@ -160,8 +195,8 @@ func (node *LoopNode) Init(nodes []INode) error {
     return nil
 }
 
-func (node LoopNode) Execute(state *XiiState) error {
-    res, err := Evaluate(state, node.expression)
+func (node *LoopNode) Execute(state *XiiState) error {
+    res, err := Evaluate(node, node.expression)
 
     if err != nil {
         return err
@@ -182,32 +217,10 @@ type ConditionNode struct {
 }
 
 func (node *ConditionNode) Init(nodes []INode) error {
-    nextEnd := node.Next()
-    counter := 1
-    _, ok := nextEnd.(*BlockEndNode)
-    for {
-        if ok {
-            counter--
+    nextEnd := findNextEndNode(node)
 
-            if counter == 0 {
-                break
-            }
-        }
-
-        _, ok2 := nextEnd.(*LoopNode)
-        _, ok3 := nextEnd.(*ConditionNode)
-
-        if ok2 || ok3 {
-            counter++
-        }
-        
-        nextEnd = nextEnd.Next()
-
-        if nextEnd == nil {
-            return errors.New("A condition node requires a matching end node")
-        }
-
-        _, ok = nextEnd.(*BlockEndNode)
+    if nextEnd == nil {
+        return errors.New("A condition node requires a matching end node")
     }
     
     node.nextEndNode = nextEnd.Next()
@@ -223,8 +236,8 @@ func (node *ConditionNode) Init(nodes []INode) error {
     return nil
 }
 
-func (node ConditionNode) Execute(state *XiiState) error {
-    res, err := Evaluate(state, node.expression)
+func (node *ConditionNode) Execute(state *XiiState) error {
+    res, err := Evaluate(node, node.expression)
 
     if err != nil {
         return err
@@ -241,6 +254,7 @@ func (node ConditionNode) Execute(state *XiiState) error {
 type BlockEndNode struct {
     Node
     companionNode INode
+    endsFunction bool
 }
 
 func (node *BlockEndNode) Init(nodes []INode) error {
@@ -259,6 +273,12 @@ func (node *BlockEndNode) Init(nodes []INode) error {
                 node.companionNode = companion
                 return nil
             }
+        case (*FunctionDeclarationNode):
+            counter--
+            if counter == 0 {
+                node.endsFunction = true
+                return nil
+            }
         case (*BlockEndNode):
             counter++
         }
@@ -269,9 +289,13 @@ func (node *BlockEndNode) Init(nodes []INode) error {
     }
 }
 
-func (node BlockEndNode) Execute(state *XiiState) error {
+func (node *BlockEndNode) Execute(state *XiiState) error {
     if node.companionNode != nil {
         state.NextNode = node.companionNode
+    }
+
+    if node.endsFunction {
+        state.NextNode = state.FunctionStack.Pop().Next()
     }
 
     return nil
@@ -299,12 +323,13 @@ func (node *SetNode) Init(nodes []INode) error {
     return nil
 }
 
-func (node SetNode) Execute(state *XiiState) error {
+func (node *SetNode) Execute(state *XiiState) error {
     varname := node.Keyword
-    _, ok := state.VariableTable[varname].(float64)
+    variable := node.GetScope().GetVar(varname)
+    _, ok := variable.(float64)
 
     if !ok {
-        _, ok = state.VariableTable[varname].(string)
+        _, ok = variable.(string)
         if !ok {
             return errors.New("set: Can't set not existing variable")
         }
@@ -314,54 +339,91 @@ func (node SetNode) Execute(state *XiiState) error {
             if i > 0 {
                 setval += " "
             }
-            setval += v.GetText(*state)
+            setval += v.GetText(node.GetScope())
         }
 
-        state.VariableTable[varname] = setval
+        node.GetScope().SetVar(varname, setval)
 
         return nil
     }
     
-    res, err := Evaluate(state, node.expression)
+    res, err := Evaluate(node, node.expression)
 
     if err != nil {
         return err
     }
 
-    state.VariableTable[varname] = res
+    node.GetScope().SetVar(varname, res)
 
     return nil
 }
 
 
-func (node Node) Execute(state *XiiState) error {
-    return errors.New("Error: No-Op Node executed")
+func (node *Node) Execute(state *XiiState) error {
+    return errors.New("No-Op Node executed")
 }
 
-func (node Node) Previous() INode {
+func (node *Node) Previous() INode {
     return node.PreviousNode
 }
 
-func (node Node) Next() INode {
+func (node *Node) Next() INode {
     return node.NextNode
 }
 
-func (node Node) GetKeyword() string {
+func (node *Node) GetKeyword() string {
     return node.Keyword
 }
 
-func (node Node) GetID() int {
+func (node *Node) GetID() int {
     return node.ID
 }
 
-func (node Node) Init(nodes []INode) error {
+func (node *Node) Init(nodes []INode) error {
     return nil
 }
 
-func (node Node) String() string {
+func (node *Node) String() string {
     return fmt.Sprintf("{{%d/%s : %s}}", node.ID, node.Keyword, node.Parameter)
 }
 
-func (node Node) GetTrace() string {
+func (node *Node) GetTrace() string {
     return node.Trace
+}
+
+func (node *Node) GetScope() *Scope {
+    return node.Scope
+}
+
+func findNextEndNode(node INode) INode {
+    nextEnd := node.Next()
+    counter := 1
+    _, ok := nextEnd.(*BlockEndNode)
+    for {
+        if ok {
+            counter--
+
+            if counter == 0 {
+                break
+            }
+        }
+
+        _, ok2 := nextEnd.(*LoopNode)
+        _, ok3 := nextEnd.(*ConditionNode)
+        _, ok4 := nextEnd.(*FunctionDeclarationNode)
+
+        if ok2 || ok3 || ok4 {
+            counter++
+        }
+        
+        nextEnd = nextEnd.Next()
+
+        if nextEnd == nil {
+            return nil
+        }
+
+        _, ok = nextEnd.(*BlockEndNode)
+    }
+
+    return nextEnd
 }

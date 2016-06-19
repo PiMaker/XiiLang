@@ -1,0 +1,11 @@
+#! /usr/bin/env XiiLang
+
+out "Function tests commencing"
+
+function output string s
+   out s 
+end
+
+call output "This is a test!"
+
+out "Function tests over"

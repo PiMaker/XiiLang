@@ -52,7 +52,7 @@ func TokenizeFile(path string) ([][]Token, error) {
 }
 
 func tokenize(line string, slice *[][]Token) {
-    trimmed := strings.Trim(line, " ")
+    trimmed := strings.TrimSpace(line)
     if trimmed == "" {
         return
     }
@@ -68,7 +68,7 @@ func tokenize(line string, slice *[][]Token) {
 func stringSliceToTokenSlice(vs []string) []Token {
     var vsm []Token
     for _, v := range vs {
-        if strings.Trim(v, " ") != "" {
+        if strings.TrimSpace(v) != "" {
             vsm = append(vsm, Token{Text: v, File: currentPath, Line: currentTokenLine})
         }
     }

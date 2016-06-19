@@ -13,11 +13,15 @@ You can read about the following topics in the docs:
 
 # ToDo
 
-* Add scopes
-* Add functions
+* Add function parameter type checking
 * Add namespaces
+* Add external file parsing
+* Add string handling
+* Add IO
 * Add real types
 * Add structures
+* Improve expression handling
+* Make useable as library
 
 # License
 

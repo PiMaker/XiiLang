@@ -1,0 +1,16 @@
+{
+	"ImportPath": "github.com/PiMaker/XiiLang",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/Knetic/govaluate",
+			"Comment": "v1.4.0-7-g63c7fee",
+			"Rev": "63c7fee765ffe58e3c4693fd159702bb4c38d92d"
+		},
+		{
+			"ImportPath": "github.com/dustin/go-humanize",
+			"Rev": "499693e27ee0d14ffab67c31ad065fdb3d34ea75"
+		}
+	]
+}

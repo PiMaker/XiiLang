@@ -1,0 +1,27 @@
+#! /usr/bin/env XiiLang
+
+# Read n
+out "How many fibonacci numbers do you want to calculate?"
+number n
+in n
+
+# Declare function
+function fib number n number a number b
+    number c
+    c = a + b
+
+    # Output
+    out c
+
+    n = n - 1
+
+    # Recurse
+    if n > 0
+        call fib n b c
+    end
+end
+
+# Call function
+call fib n 0 1
+
+out "Done!"

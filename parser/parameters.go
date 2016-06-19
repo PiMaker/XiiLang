@@ -2,6 +2,7 @@ package parser
 
 import (
 	"strings"
+    "strconv"
 
     humanize "github.com/dustin/go-humanize"
 )
@@ -11,8 +12,9 @@ type Parameter struct {
 }
 
 type IParameter interface {
-    GetText(state XiiState) string
+    GetText(scope *Scope) string
     GetRaw() string
+    GetValue(scope *Scope) interface{}
 }
 
 type LiteralParameter struct {
@@ -31,6 +33,11 @@ func (p NumberParameter) String() string {
     return "*" + p.Text + "*"
 }
 
+func (p NumberParameter) GetValue(_ *Scope) interface{} {
+    retval, _ := strconv.ParseFloat(p.Text, 64)
+    return retval
+}
+
 type VariableParameter struct {
     Parameter
 }
@@ -39,12 +46,18 @@ func (p VariableParameter) String() string {
     return "%" + p.Text + "%"
 }
 
-func (p VariableParameter) GetText(state XiiState) string {
-    lit, ok1 := state.VariableTable[p.Text].(string)
-    num, ok2 := state.VariableTable[p.Text].(float64)
+func (p VariableParameter) GetText(scope *Scope) string {
+    variable := scope.GetVar(p.Text)
+
+    if variable == nil {
+        return ""
+    }
+
+    lit, ok1 := variable.(string)
+    num, ok2 := variable.(float64)
 
     if ok1 {
-        return lit
+        return strings.Replace(lit, "\"", "", -1)
     }
     if ok2 {
         return humanize.Ftoa(num)
@@ -53,10 +66,27 @@ func (p VariableParameter) GetText(state XiiState) string {
     return ""
 }
 
-func (l LiteralParameter) GetText(state XiiState) string {
-    //if l.Text == "\"" {
-    //    return " "
-    //}
+func (p VariableParameter) GetValue(scope *Scope) interface{} {
+    variable := scope.GetVar(p.Text)
+
+    if variable == nil {
+        return ""
+    }
+
+    lit, ok1 := variable.(string)
+    num, ok2 := variable.(float64)
+
+    if ok1 {
+        return strings.Replace(lit, "\"", "", -1)
+    }
+    if ok2 {
+        return num
+    }
+
+    return ""
+}
+
+func (l LiteralParameter) GetText(scope *Scope) string {
     return strings.Replace(l.Text, "\"", "", -1)
 }
 
@@ -69,10 +99,14 @@ func (p OperatorParameter) String() string {
     return "{" + p.Text + "}"
 }
 
-func (p Parameter) GetText(state XiiState) string {
+func (p Parameter) GetText(_ *Scope) string {
     return p.Text
 }
 
 func (p Parameter) GetRaw() string {
     return p.Text
+}
+
+func (p Parameter) GetValue(scope *Scope) interface{} {
+    return p.GetText(scope)
 }

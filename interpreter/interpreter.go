@@ -10,12 +10,12 @@ import (
     "time"
 )
 
-func Interpret(nodes []parser.INode, state *parser.XiiState, debug, dump, trace, time bool) {
+func Interpret(nodes []parser.INode, state *parser.XiiState, debug, trace, time bool) {
     log.Println("Beginning interpretation...")
 
-    if debug || dump || trace || time {
+    if debug || trace || time {
         log.Println("Using debug interpreter, expect performance penalties.")
-        InterpretDebug(nodes, state, debug, dump, trace, time)
+        InterpretDebug(nodes, state, debug, trace, time)
     } else {
         log.Println("Using release interpreter.")
         InterpretRelease(nodes, state)
@@ -45,7 +45,7 @@ func InterpretRelease(nodes []parser.INode, state *parser.XiiState) {
 
 var ExecutionTimeTable map[string][]time.Duration
 
-func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, dump, trace, timeExec bool) {
+func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, trace, timeExec bool) {
     if debug {
         fmt.Println("Debugging mode enabled, press enter after each command to continue.")
     }
@@ -74,7 +74,7 @@ func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, dump, t
 
         err := state.NextNode.Execute(state)
 
-        if timeExec {
+        if timeExec && state.NextNode != nil {
             duration := time.Since(beforeTime)
             keyword := state.NextNode.GetTrace()
             ExecutionTimeTable[keyword] = append(ExecutionTimeTable[keyword], duration)
@@ -91,12 +91,6 @@ func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, dump, t
 
         if state.NextNode == nil {
             break
-        }
-
-        if dump {
-            fmt.Println()
-            fmt.Println("---- Variable-Table:")
-            dumpMap(state.VariableTable)
         }
 
         if debug {
