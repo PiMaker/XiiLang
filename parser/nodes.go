@@ -121,6 +121,8 @@ func (node *OutputNode) Execute(state *XiiState) error {
 
     state.StdOut.WriteRune('\n')
 
+    state.StdOut.Flush()
+
     return nil
 }
 
