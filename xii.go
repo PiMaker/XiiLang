@@ -9,12 +9,11 @@ import (
     "time"
     "log"
     "sort"
-    "github.com/PiMaker/XiiLang/parser"
     "github.com/PiMaker/XiiLang/interpreter"
 )
 
 func main() {
-    fmt.Println("XiiLang(sr) v0.4, (C) Stefan Reiter 2016\n")
+    fmt.Println("XiiLang(sr) v0.5, (C) Stefan Reiter 2016\n")
 
     verbose := flag.Bool("v", false, "Be verbose with output")
     debug := flag.Bool("d", false, "Execute a script line by line and wait for enter")
@@ -31,7 +30,7 @@ func main() {
         log.SetOutput(ioutil.Discard)
     }
 
-    parser.VerboseEval = *verboseEval
+    interpreter.VerboseEval = *verboseEval
 
     if *verboseEval {
         fmt.Println("Eval trace enabled")
@@ -41,14 +40,14 @@ func main() {
 
     startTime := time.Now()
 
-    tokens, err := parser.TokenizeFile(path)
+    tokens, err := interpreter.TokenizeFile(path)
 
     if err != nil {
         fmt.Println(err.Error())
         return
     }
 
-    nodes, err := parser.ParseTokens(tokens)
+    nodes, err := interpreter.ParseTokens(tokens)
     if err != nil {
         fmt.Println(err.Error())
         return
@@ -60,10 +59,10 @@ func main() {
 
     startTime = time.Now()
 
-    state := &parser.XiiState{}
+    state := &interpreter.XiiState{}
     state.Nodes = nodes
     state.NextNode = nodes[0]
-    state.FunctionStack = parser.NewNodeStack()
+    state.FunctionStack = interpreter.NewNodeStack()
     state.StdOut = bufio.NewWriter(os.Stdout)
 
     interpreter.Interpret(nodes, state, *debug, *trace, *stats)

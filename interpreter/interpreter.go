@@ -2,7 +2,6 @@ package interpreter
 
 import (
     "log"
-    "github.com/PiMaker/XiiLang/parser"
 	"fmt"
 	"os"
 	"bufio"
@@ -10,7 +9,7 @@ import (
     "time"
 )
 
-func Interpret(nodes []parser.INode, state *parser.XiiState, debug, trace, time bool) {
+func Interpret(nodes []INode, state *XiiState, debug, trace, time bool) {
     log.Println("Beginning interpretation...")
 
     if debug || trace || time {
@@ -22,7 +21,7 @@ func Interpret(nodes []parser.INode, state *parser.XiiState, debug, trace, time 
     }
 }
 
-func InterpretRelease(nodes []parser.INode, state *parser.XiiState) {
+func InterpretRelease(nodes []INode, state *XiiState) {
     for {
         tmpNext := state.NextNode.GetID()
 
@@ -45,7 +44,7 @@ func InterpretRelease(nodes []parser.INode, state *parser.XiiState) {
 
 var ExecutionTimeTable map[string][]time.Duration
 
-func InterpretDebug(nodes []parser.INode, state *parser.XiiState, debug, trace, timeExec bool) {
+func InterpretDebug(nodes []INode, state *XiiState, debug, trace, timeExec bool) {
     if debug {
         fmt.Println("Debugging mode enabled, press enter after each command to continue.")
     }

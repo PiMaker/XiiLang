@@ -1,0 +1,12 @@
+#! /usr/bin/env XiiLang
+
+function    number x    add    number a number b
+    x = a + b
+end
+
+number a
+number b
+
+out "Enter two numbers:"
+in a
+in b

@@ -1,0 +1,5 @@
+#! /usr/bin/env XiiLang
+
+function output string lit
+    out lit
+end

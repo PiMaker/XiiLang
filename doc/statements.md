@@ -26,6 +26,16 @@ Format: ``` out [parameter]* ```
 The out statement is used for user output. You can use literals surrounded by double quotes (```"```), numbers, variables or any combination of these as parameters. Output will be formated according to the passed type.
 Example: ``` out "The number " 6 " is " x ``` where x is an initialized variable
 
+## function
+
+Format: ``` function [type parameter]* ```
+The function statement defines a new function. It takes the parameters for the function as parameters to the statement. It also opens a new block which has to be ended by an ```end``` statement.
+
+## call
+
+Format: ``` call <function name> [parameter]* ```
+The call statement is used to call functions. The first parameter is the function to call by name, followed by the parameters to pass. These can  be literals, numbers or variables which will be passed by value.
+
 ## if
 
 Format: ``` if <condition> ```
@@ -38,5 +48,10 @@ The while command is used for loops. It works the same as the ```if``` statement
 
 ## end
 
-Format ``` end ```
+Format: ``` end ```
 The end statement does not take any parameters. It is only used in conjunction with ```if``` and ```while```. For good readability it is recommended that a block between ```if```/```while``` and ```end``` is indented.
+
+## parse
+
+Format: ``` parse <filename> ```
+The parse statement loads a file and executes it when encountered. Note, that this is a preprocessor statement, thus it will not appear in the AST. Instead, it will be loaded and tokenized at compile time.

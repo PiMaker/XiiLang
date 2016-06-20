@@ -1,4 +1,4 @@
-package parser
+package interpreter
 
 import (
     "bufio"
@@ -6,6 +6,8 @@ import (
     "log"
     "errors"
     "strings"
+	"fmt"
+    "path"
 )
 
 type Token struct {
@@ -62,6 +64,42 @@ func tokenize(line string, slice *[][]Token) {
     }
 
     words := strings.Split(line, " ")
+
+    if len(words) > 1 && words[0] == "parse" {
+        oldPath := currentPath
+        folderpath := path.Dir(oldPath)
+        if folderpath != string(os.PathSeparator) {
+            folderpath += string(os.PathSeparator)
+        }
+        currentPath = folderpath + strings.TrimLeft(line, words[0] + " ")
+
+        log.Println("Parse expression found, loading external file \"" + currentPath + "\"...")
+
+        inFile, err := os.Open(currentPath)
+        if err != nil {
+            fmt.Println("Couldn't open parse-file, ignoring for now, but don't be alarmed if errors happen later.")
+            currentPath = oldPath
+            return
+        }
+        defer inFile.Close()
+
+        scanner := bufio.NewScanner(inFile)
+        scanner.Split(bufio.ScanLines)
+
+        log.Println("Tokenizing...")
+
+        currentTokenLine = 0
+
+        for scanner.Scan() {
+            currentTokenLine++
+            tokenize(scanner.Text(), slice)
+        }
+
+        currentPath = oldPath
+
+        return
+    }
+
     *slice = append(*slice, stringSliceToTokenSlice(words))
 }
 

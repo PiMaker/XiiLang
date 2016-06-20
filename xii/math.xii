@@ -1,5 +1,7 @@
 #! /usr/bin/env XiiLang
 
+parse mathlib.xii
+
 number a
 number b
 number x
@@ -7,14 +9,14 @@ number y
 number t
 number gcd
 number lcm
- 
-out "Enter two integers:"
+
+call output "Enter two integers:"
 in x
 in y
- 
+
 a = x
 b = y
- 
+
 while b != 0
     t = b
     b = a % b
@@ -22,7 +24,7 @@ while b != 0
 end
  
 gcd = a
-lcm = ( x * y ) / gcd
+lcm = (x * y) / gcd
  
 out "Greatest common divisor: " gcd
 out "Least common multiple: " lcm

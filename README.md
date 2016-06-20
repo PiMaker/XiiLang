@@ -15,12 +15,11 @@ You can read about the following topics in the docs:
 
 * Add function parameter type checking
 * Add namespaces
-* Add external file parsing
 * Add string handling
 * Add IO
 * Add real types
 * Add structures
-* Improve expression handling
+* Improve evaluable expression handling
 * Make useable as library
 
 # License

@@ -1,4 +1,4 @@
-package parser
+package interpreter
 
 import (
     "strconv"
@@ -87,7 +87,7 @@ func ParseTokens(tokens [][]Token) ([]INode, error) {
             newNode = &InputNode{Node: Node{Keyword: keyword.Text, Parameter: parameter, ID: ii, Trace: trace, Scope: scopeStack.Top()}}
         } else if keyword.Text == "function" {
             if len(parameter) < 1 {
-                return nil, errors.New(trace + ": A function declaration needs a name as a first parameter")
+                return nil, errors.New(trace + ": A function declaration needs at least a name as a first parameter")
             }
 
             passers := make([]Passer, (len(parameter) - 1) / 2)
